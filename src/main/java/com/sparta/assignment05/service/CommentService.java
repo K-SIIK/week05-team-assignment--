@@ -26,10 +26,6 @@ public class CommentService {
     public GlobalResDto<?> createComment(Long boardId, Member member, String text) {
         Board board = isPresentPostId(boardId);
         if (board == null)  return GlobalResDto.fail("NOT_EXIST_BOARD", "존재하지 않는 게시물입니다.");
-        // email 말고 member 로 비교해도 되겠다/.
-        if (!member.getEmail().equals(board.getMember().getEmail())) {
-            return GlobalResDto.fail("NO_AUTHOR", "작성자가 아닙니다.");
-        }
 
         Comment comment = Comment.builder()
                 .comment(text)
@@ -53,8 +49,8 @@ public class CommentService {
         for (Comment comment : commentList) {
             responseList.add(new CommentResponse(comment));
         }
-
-        return GlobalResDto.success(responseList);
+        Optional<Comment> comment = commentRepository.findCommentById(boardId);
+        return GlobalResDto.success(comment);
     }
 
     @Transactional

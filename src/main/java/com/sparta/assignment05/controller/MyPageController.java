@@ -26,4 +26,10 @@ public class MyPageController {
     public GlobalResDto<?> getMyComments(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         return myPageService.getMyComments(userDetails.getMember());
     }
+
+
+    @GetMapping("/mypages/hearts")
+    public GlobalResDto<?> getMyHearts(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return myPageService.getMyHearts(userDetails.getMember());
+    }
 }

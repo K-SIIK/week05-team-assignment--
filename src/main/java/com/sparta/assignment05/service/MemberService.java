@@ -53,7 +53,7 @@ public class MemberService {
                 .modifiedAt(member.getModifiedAt())
                 .build();
 
-        return GlobalResDto.success(memberResponse);
+        return GlobalResDto.success(member.getResponceInstance());
     }
 
     public GlobalResDto<?> login(LoginRequest loginRequest, HttpServletResponse response) {

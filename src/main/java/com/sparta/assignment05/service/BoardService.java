@@ -3,6 +3,7 @@ package com.sparta.assignment05.service;
 import com.sparta.assignment05.dto.request.BoardRequest;
 import com.sparta.assignment05.dto.response.BoardResponse;
 import com.sparta.assignment05.dto.GlobalResDto;
+import com.sparta.assignment05.dto.response.CommentResponse;
 import com.sparta.assignment05.dto.response.HeartResponse;
 import com.sparta.assignment05.entity.Board;
 import com.sparta.assignment05.entity.Comment;
@@ -74,10 +75,10 @@ public class BoardService {
         if (board == null) return GlobalResDto.fail("NOT_EXIST_BOARD", "존재하지 않는 게시물입니다.");
 
         List<Comment> commentList = commentRepository.findAllByBoard(board);
-        List<String> textList = new ArrayList<>();
-        for (Comment comment : commentList) {
-            textList.add(comment.getComment());
-        }
+//        List<String> textList = new ArrayList<>();
+//        for (Comment comment : commentList) {
+//            textList.add(comment.getComment());
+//        }
 
         BoardResponse response = BoardResponse.builder()
                 .boardId(boardId)
@@ -85,7 +86,7 @@ public class BoardService {
                 .content(board.getContent())
                 .author(board.getMember().getEmail())
                 .heartCnt(board.getHeartCnt())
-                .commentList(textList)
+                .commentList(BoardResponse.commentToResponse(commentList))
                 .createdAt(board.getCreatedAt())
                 .modifiedAt(board.getModifiedAt())
                 .build();
@@ -131,6 +132,11 @@ public class BoardService {
             return GlobalResDto.fail("NO_AUTHOR", "작성자가 아닙니다.");
         }
 
+        // 댓글 먼저 지운 후,
+        commentRepository.deleteCommentsByBoard(board);
+        // 게시물 좋아요 객체도 제거
+        heartRepository.deleteHeartsByBoard(board);
+        // 게시물 삭제
         boardRepository.delete(board);
 
         return GlobalResDto.success("Deleted Data");
