@@ -3,7 +3,6 @@ package com.sparta.assignment05.jwt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sparta.assignment05.dto.response.ExceptionDto;
-import com.sparta.assignment05.dto.response.GlobalResDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

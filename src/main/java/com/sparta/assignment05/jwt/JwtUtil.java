@@ -1,20 +1,24 @@
 package com.sparta.assignment05.jwt;
 
 
+import com.sparta.assignment05.dto.GlobalResDto;
 import com.sparta.assignment05.entity.Member;
 import com.sparta.assignment05.entity.RefreshToken;
 import com.sparta.assignment05.repository.RefreshTokenRepository;
+import com.sparta.assignment05.service.UserDetailsImpl;
 import com.sparta.assignment05.service.UserDetailsServiceImpl;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -70,8 +74,9 @@ public class JwtUtil {
                 .setIssuedAt(date)
                 .signWith(key, signatureAlgorithm)
                 .compact();
-
     }
+
+
 
     // 토큰 검증
     public Boolean tokenValidation(String token) {
@@ -83,6 +88,23 @@ public class JwtUtil {
             return false;
         }
     }
+
+//    // 토큰이 유효한지 파악하는 메서드(올바른 토큰인지, 유효기간이 지났는지 등등 )
+//    public boolean isWrongToken(String token) {
+//        try {
+//            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+//            return false;
+//        } catch (SecurityException | MalformedJwtException e) {
+//            log.info("Invalid JWT signature, 유효하지 않는 JWT 서명 입니다.");
+//        } catch (ExpiredJwtException e) {
+//            log.info("Expired JWT token, 만료된 JWT token 입니다.");
+//        } catch (UnsupportedJwtException e) {
+//            log.info("Unsupported JWT token, 지원되지 않는 JWT 토큰 입니다.");
+//        } catch (IllegalArgumentException e) {
+//            log.info("JWT claims is empty, 잘못된 JWT 토큰 입니다.");
+//        }
+//        return true;
+//    }
 
     // refreshToken 토큰 검증
     public Boolean refreshTokenValidation(String token) {
@@ -102,9 +124,33 @@ public class JwtUtil {
         return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
     }
 
+    // 인증된 유저가 맞는지 조회하는 메서드
+    public Member getMemberFromAuthentication() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || AnonymousAuthenticationToken.class.
+                isAssignableFrom(authentication.getClass())) {
+            return null;
+        }
+        return ((UserDetailsImpl) authentication.getPrincipal()).getMember();
+    }
+
     // 토큰에서 email 가져오는 기능
     public String getEmailFromToken(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody().getSubject();
+    }
+
+    @Transactional
+    public void deleteToken(Member member) {
+        Optional<RefreshToken> refreshToken = refreshTokenRepository.findByEmail(member.getEmail());
+
+        if (refreshToken.isEmpty()) {
+            GlobalResDto.fail("NOT_EXIST_REFRESH_TOKEN", "Refresh Token이 존재하지 않습니다.");
+            return;
+        }
+
+        refreshTokenRepository.delete(refreshToken.get());
+        GlobalResDto.success("SUCCESS");
     }
 
 }

@@ -1,4 +1,4 @@
-package com.sparta.assignment05.dto.response;
+package com.sparta.assignment05.dto;
 
 import com.sparta.assignment05.entity.Error;
 import lombok.AllArgsConstructor;

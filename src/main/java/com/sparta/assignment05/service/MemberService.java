@@ -1,14 +1,15 @@
 package com.sparta.assignment05.service;
 
-import antlr.Token;
 import com.sparta.assignment05.dto.request.LoginRequest;
-import com.sparta.assignment05.dto.response.GlobalResDto;
+import com.sparta.assignment05.dto.GlobalResDto;
 import com.sparta.assignment05.dto.request.MemberRequest;
 import com.sparta.assignment05.dto.response.MemberResponse;
 import com.sparta.assignment05.entity.Member;
+import com.sparta.assignment05.entity.RefreshToken;
 import com.sparta.assignment05.jwt.JwtUtil;
 import com.sparta.assignment05.jwt.TokenDto;
 import com.sparta.assignment05.repository.MemberRepository;
+import com.sparta.assignment05.repository.RefreshTokenRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ import java.util.Optional;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
@@ -44,7 +46,7 @@ public class MemberService {
 
         memberRepository.save(member);
         MemberResponse memberResponse = MemberResponse.builder()
-                .id(member.getId())
+                .memberId(member.getId())
                 .email(member.getEmail())
                 .nickName(member.getNickName())
                 .createdAt(member.getCreatedAt())
@@ -68,10 +70,20 @@ public class MemberService {
         // 로그인 성공하면 토큰 발급
         TokenDto tokenDto = jwtUtil.createAllToken(member.get());
 
+        Optional<RefreshToken> refreshToken = refreshTokenRepository.findByEmail(loginRequest.getEmail());
+
+        if (refreshToken.isPresent()) {
+            refreshTokenRepository.save(refreshToken.get().updateToken(tokenDto.getRefreshToken()));
+        } else {
+            RefreshToken newRefreshToken = new RefreshToken(tokenDto.getRefreshToken(),loginRequest.getEmail());
+            refreshTokenRepository.save(newRefreshToken);
+        }
+
         // 헤더에 토큰 첨부
         attachTokenToHeader(tokenDto, response);
 
         MemberResponse memberResponse = MemberResponse.builder()
+                .memberId(member.get().getId())
                 .email(member.get().getEmail())
                 .nickName(member.get().getNickName())
                 .createdAt(member.get().getCreatedAt())
@@ -85,4 +97,18 @@ public class MemberService {
         response.setHeader(JwtUtil.ACCESS_TOKEN, tokenDto.getAccessToken());
         response.setHeader(JwtUtil.REFRESH_TOKEN, tokenDto.getRefreshToken());
     }
+
+    public GlobalResDto<?> logout(UserDetailsImpl userDetails) {
+
+        if (null == userDetails.getMember()) {
+            return GlobalResDto.fail("MEMBER_NOT_FOUND",
+                    "사용자를 찾을 수 없습니다.");
+        }
+
+        jwtUtil.deleteToken(userDetails.getMember());
+
+        return GlobalResDto.success("SUCCESS");
+    }
+
+
 }

@@ -17,6 +17,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+
+// WebSecurityConfig : 웹사이트 접근 권한 제어
 public class WebSecurityConfig {
 
     private final JwtUtil jwtUtil;

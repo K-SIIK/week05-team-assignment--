@@ -1,7 +1,7 @@
 package com.sparta.assignment05.controller;
 
 import com.sparta.assignment05.dto.request.LoginRequest;
-import com.sparta.assignment05.dto.response.GlobalResDto;
+import com.sparta.assignment05.dto.GlobalResDto;
 import com.sparta.assignment05.dto.request.MemberRequest;
 import com.sparta.assignment05.jwt.JwtUtil;
 import com.sparta.assignment05.service.MemberService;
@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.net.http.HttpResponse;
 
 @RequiredArgsConstructor
 @RequestMapping("/api")
@@ -31,5 +30,19 @@ public class MemberController {
     public GlobalResDto<?> login(@RequestBody @Valid LoginRequest loginRequest,
                                  HttpServletResponse response) {
         return memberService.login(loginRequest, response);
+    }
+
+    @PostMapping("/members/logout")
+    public GlobalResDto<?> logout(@AuthenticationPrincipal UserDetailsImpl userDetails) {
+        return memberService.logout(userDetails);
+    }
+
+    // 엑세스토큰 재발급 메서드
+    // @AuthenticationPrincipal
+    @GetMapping("/issue/token")
+    public GlobalResDto<?> issuedToken(@AuthenticationPrincipal UserDetailsImpl userDetails,
+                                       HttpServletResponse response) {
+        response.addHeader(JwtUtil.ACCESS_TOKEN, jwtUtil.createToken(userDetails.getMember(), "Access"));
+        return GlobalResDto.success("REISSUE_ACCESS_TOKEN");
     }
 }
