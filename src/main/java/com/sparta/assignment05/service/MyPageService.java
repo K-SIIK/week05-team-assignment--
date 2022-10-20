@@ -44,6 +44,7 @@ public class MyPageService {
                     .createdAt(board.getCreatedAt())
                     .modifiedAt(board.getModifiedAt())
                     .commentList(BoardResponse.commentToResponse(commentList))
+                    .image(board.getImage())
                     .build();
 
             responseList.add(response);
@@ -66,6 +67,7 @@ public class MyPageService {
                     .createdAt(board.getCreatedAt())
                     .modifiedAt(board.getModifiedAt())
                     .commentCnt(board.getCommentCnt())
+                    .image(board.getImage())
                     .build();
 
             responseList.add(response);
@@ -86,6 +88,7 @@ public class MyPageService {
                     .commentCnt(board.getCommentCnt())
                     .createdAt(board.getCreatedAt())
                     .modifiedAt(board.getModifiedAt())
+                    .image(board.getImage())
                     .build();
 
             responseList.add(response);

@@ -2,6 +2,7 @@ package com.sparta.assignment05.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.sparta.assignment05.entity.Board;
+
 import com.sparta.assignment05.entity.Comment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,6 +29,8 @@ public class BoardResponse {
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
     private List<CommentResponse> commentList;
+    private String image;
+
 
     public static List<CommentResponse> commentToResponse(List<Comment> commentList) {
         List<CommentResponse> responseList = new ArrayList<>();
@@ -48,6 +51,7 @@ public class BoardResponse {
         this.commentCnt = board.getCommentCnt();
         this.createdAt = board.getCreatedAt();
         this.modifiedAt = board.getModifiedAt();
+        this.image = board.getImage();
     }
 
 }

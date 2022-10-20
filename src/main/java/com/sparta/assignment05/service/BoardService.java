@@ -1,5 +1,11 @@
 package com.sparta.assignment05.service;
 
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.util.IOUtils;
+import com.sparta.assignment05.S3.CommonUtils;
 import com.sparta.assignment05.dto.request.BoardRequest;
 import com.sparta.assignment05.dto.response.BoardResponse;
 import com.sparta.assignment05.dto.GlobalResDto;
@@ -14,9 +20,14 @@ import com.sparta.assignment05.repository.BoardRepository;
 import com.sparta.assignment05.repository.CommentRepository;
 import com.sparta.assignment05.repository.HeartRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.List;
 
 import static com.sparta.assignment05.service.MyPageService.getGlobalResDto;
@@ -30,8 +41,28 @@ public class BoardService {
     private final HeartRepository heartRepository;
     private final CommentRepository commentRepository;
 
+    private final AmazonS3Client amazonS3Client;
+
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucketName;
+
     @Transactional
-    public GlobalResDto<?> createBoard(BoardRequest boardRequest, Member member) {
+    public GlobalResDto<?> createBoard(MultipartFile multipartFile, BoardRequest boardRequest, Member member) throws IOException {
+        String imgurl = null;
+
+        if (!multipartFile.isEmpty()) {
+            String fileName = CommonUtils.buildFileName(multipartFile.getOriginalFilename());
+            ObjectMetadata objectMetadata = new ObjectMetadata();
+            objectMetadata.setContentType(multipartFile.getContentType());
+
+            byte[] bytes = IOUtils.toByteArray(multipartFile.getInputStream());
+            objectMetadata.setContentLength(bytes.length);
+            ByteArrayInputStream byteArrayIs = new ByteArrayInputStream(bytes);
+
+            amazonS3Client.putObject(new PutObjectRequest(bucketName, fileName, byteArrayIs, objectMetadata)
+                    .withCannedAcl(CannedAccessControlList.PublicRead));
+            imgurl = amazonS3Client.getUrl(bucketName, fileName).toString();
+        }
 
         Board board = Board.builder()
                 .title(boardRequest.getTitle())
@@ -39,10 +70,24 @@ public class BoardService {
                 .member(member)
                 .heartCnt(0L)
                 .commentCnt(0L)
+                .image(imgurl)
                 .build();
 
         boardRepository.save(board);
-        return GlobalResDto.success(new BoardResponse(board));
+
+        BoardResponse response = BoardResponse.builder()
+                .boardId(board.getId())
+                .title(board.getTitle())
+                .content(board.getContent())
+                .author(board.getMember().getEmail())
+                .heartCnt(board.getHeartCnt())
+                .commentCnt(board.getCommentCnt())
+                .createdAt(board.getCreatedAt())
+                .modifiedAt(board.getModifiedAt())
+                .image(board.getImage())
+                .build();
+
+        return GlobalResDto.success(response);
     }
 
     @Transactional(readOnly = true)
@@ -66,6 +111,7 @@ public class BoardService {
                 .commentList(BoardResponse.commentToResponse(commentList))
                 .createdAt(board.getCreatedAt())
                 .modifiedAt(board.getModifiedAt())
+                .image(board.getImage())
                 .build();
         return GlobalResDto.success(response);
     }

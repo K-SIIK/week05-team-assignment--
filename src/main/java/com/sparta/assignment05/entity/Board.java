@@ -22,6 +22,8 @@ public class Board extends TimeStamped {
     @Column(nullable = false)
     private String title;
 
+    @Column
+    private String image;
 
     @Column(nullable = false)
     private String content;
