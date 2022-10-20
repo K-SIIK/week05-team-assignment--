@@ -47,4 +47,10 @@ public class HandlerException {
     public GlobalResDto<?> noAuthorException(NoAuthorException e) {
         return GlobalResDto.fail("NO_AUTHOR", e.getMessage() + " 님은 작성자가 아닙니다.");
     }
+
+    @ExceptionHandler(NotExistCommentException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public GlobalResDto<?> notExistCommentException() {
+        return GlobalResDto.fail("NOT_EXIST_COMMENT", "존재하지 않는 댓글입니다.");
+    }
 }

@@ -1,6 +1,7 @@
 package com.sparta.assignment05.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sparta.assignment05.exception.NoAuthorException;
 import com.sparta.assignment05.exception.WrongPasswordsException;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,5 +37,12 @@ public class Member extends TimeStamped{
     public void validatePassword(PasswordEncoder passwordEncoder, String password) throws WrongPasswordsException {
         if (!passwordEncoder.matches(password, this.password))
             throw new WrongPasswordsException();
+    }
+
+    // 작성자만 수정, 삭제할 수 있도록 확인
+    public void checkAuthor(Board board) throws NoAuthorException {
+        if (!this.getEmail().equals(board.getMember().getEmail())) {
+            throw new NoAuthorException(this.getEmail());
+        }
     }
 }

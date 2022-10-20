@@ -1,6 +1,9 @@
 package com.sparta.assignment05.controller;
 
 import com.sparta.assignment05.dto.GlobalResDto;
+import com.sparta.assignment05.exception.NoAuthorException;
+import com.sparta.assignment05.exception.NotExistBoardException;
+import com.sparta.assignment05.exception.NotExistCommentException;
 import com.sparta.assignment05.service.CommentService;
 import com.sparta.assignment05.service.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
@@ -17,13 +20,13 @@ public class CommentController {
     @PostMapping("/auth/boards/{boardId}/comments")
     public GlobalResDto<?> createComment(@PathVariable Long boardId,
                                          @AuthenticationPrincipal UserDetailsImpl userDetails,
-                                         @RequestBody String text) {
+                                         @RequestBody String text) throws NotExistBoardException {
 
         return commentService.createComment(boardId, userDetails.getMember(), text);
     }
 
     @GetMapping("/boards/{boardId}/comments")
-    public GlobalResDto<?> getCommentList(@PathVariable Long boardId) {
+    public GlobalResDto<?> getCommentList(@PathVariable Long boardId) throws NotExistBoardException {
         return commentService.getCommentList(boardId);
     }
 
@@ -31,7 +34,7 @@ public class CommentController {
     public GlobalResDto<?> updateComment(@PathVariable Long boardId,
                                          @PathVariable Long commentId,
                                          @RequestBody String text,
-                                         @AuthenticationPrincipal UserDetailsImpl userDetails) {
+                                         @AuthenticationPrincipal UserDetailsImpl userDetails) throws NotExistBoardException, NoAuthorException, NotExistCommentException {
 
         return commentService.updateComment(boardId, commentId, text, userDetails.getMember());
     }
@@ -39,7 +42,8 @@ public class CommentController {
     @DeleteMapping("/auth/boards/{boardId}/comments/{commentId}")
     public GlobalResDto<?> deleteComment(@PathVariable Long boardId,
                                          @PathVariable Long commentId,
-                                         @AuthenticationPrincipal UserDetailsImpl userDetails) {
+                                         @AuthenticationPrincipal UserDetailsImpl userDetails)
+            throws NotExistBoardException, NoAuthorException, NotExistCommentException {
 
         return commentService.deleteComment(boardId, commentId, userDetails.getMember());
     }

@@ -5,6 +5,9 @@ import com.sparta.assignment05.dto.response.CommentResponse;
 import com.sparta.assignment05.entity.Board;
 import com.sparta.assignment05.entity.Comment;
 import com.sparta.assignment05.entity.Member;
+import com.sparta.assignment05.exception.NoAuthorException;
+import com.sparta.assignment05.exception.NotExistBoardException;
+import com.sparta.assignment05.exception.NotExistCommentException;
 import com.sparta.assignment05.repository.BoardRepository;
 import com.sparta.assignment05.repository.CommentRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,9 +26,9 @@ public class CommentService {
     private final BoardRepository boardRepository;
 
     @Transactional
-    public GlobalResDto<?> createComment(Long boardId, Member member, String text) {
-        Board board = isPresentPostId(boardId);
-        if (board == null)  return GlobalResDto.fail("NOT_EXIST_BOARD", "존재하지 않는 게시물입니다.");
+    public GlobalResDto<?> createComment(Long boardId, Member member, String text)
+            throws NotExistBoardException {
+        Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
 
         Comment comment = Comment.builder()
                 .comment(text)
@@ -40,9 +43,8 @@ public class CommentService {
 
     // 왜 여기만 읽기 전용?
     @Transactional(readOnly = true)
-    public GlobalResDto<?> getCommentList(Long boardId) {
-        Board board = isPresentPostId(boardId);
-        if (board == null)  return GlobalResDto.fail("NOT_EXIST_BOARD", "존재하지 않는 게시물입니다.");
+    public GlobalResDto<?> getCommentList(Long boardId) throws NotExistBoardException {
+        Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
 
         List<Comment> commentList = commentRepository.findAllByBoard(board);
         List<CommentResponse> responseList = new ArrayList<>();
@@ -54,44 +56,32 @@ public class CommentService {
     }
 
     @Transactional
-    public GlobalResDto<?> updateComment(Long boardId, Long commentId, String text, Member member) {
-        Board board = isPresentPostId(boardId);
-        if (board == null)  return GlobalResDto.fail("NOT_EXIST_BOARD", "존재하지 않는 게시물입니다.");
-        // email 말고 member 로 비교해도 되겠다/.
-        if (!member.getEmail().equals(board.getMember().getEmail())) {
-            return GlobalResDto.fail("NO_AUTHOR", "작성자가 아닙니다.");
-        }
-        Optional<Comment> comment = commentRepository.findById(commentId);
-        if (comment.isEmpty()) return GlobalResDto.fail("NOT_EXIST_COMMENT","존재하지 않는 댓글입니다.");
+    public GlobalResDto<?> updateComment(Long boardId, Long commentId, String text, Member member)
+            throws NotExistBoardException, NoAuthorException, NotExistCommentException {
+        Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
+        // 작성자인지 아닌지 확인
+        member.checkAuthor(board);
+        // 댓글이 존재하지 않으면 예외처리
+        Comment comment = commentRepository.findById(commentId).orElseThrow(NotExistCommentException::new);
 
-        comment.get().update(text);
+        comment.update(text);
 
-        return GlobalResDto.success(new CommentResponse(comment.get()));
+        return GlobalResDto.success(new CommentResponse(comment));
     }
 
     @Transactional
-    public GlobalResDto<?> deleteComment(Long boardId,
-                                         Long commentId,
-                                         Member member) {
+    public GlobalResDto<?> deleteComment(Long boardId, Long commentId, Member member)
+            throws NotExistBoardException, NoAuthorException, NotExistCommentException {
 
-        Board board = isPresentPostId(boardId);
-        if (board == null)  return GlobalResDto.fail("NOT_EXIST_BOARD", "존재하지 않는 게시물입니다.");
-        // email 말고 member 로 비교해도 되겠다/.
-        if (!member.getEmail().equals(board.getMember().getEmail())) {
-            return GlobalResDto.fail("NO_AUTHOR", "작성자가 아닙니다.");
-        }
-        Optional<Comment> comment = commentRepository.findById(commentId);
-        if (comment.isEmpty()) return GlobalResDto.fail("NOT_EXIST_COMMENT","존재하지 않는 댓글입니다.");
+        Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
 
-        commentRepository.delete(comment.get());
+        member.checkAuthor(board);
+
+        // 댓글이 존재하지 않으면 예외처리
+        Comment comment = commentRepository.findById(commentId).orElseThrow(NotExistCommentException::new);
+
+        commentRepository.delete(comment);
         board.deleteComment();
         return GlobalResDto.success("Deleted Data");
-    }
-
-
-    @Transactional(readOnly = true)
-    Board isPresentPostId(Long boardId) {
-        Optional<Board> board = boardRepository.findById(boardId);
-        return board.orElse(null);
     }
 }

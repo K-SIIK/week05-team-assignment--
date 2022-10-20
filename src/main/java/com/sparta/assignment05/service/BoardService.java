@@ -78,7 +78,7 @@ public class BoardService {
         // 멤버 토큰 확인 해야돼 말아야돼
         Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
         // 작성자인지 아닌지 확인
-        checkAuthor(board, member);
+        member.checkAuthor(board);
         // 게시물 수정
         board.update(boardRequest);
         return GlobalResDto.success(new BoardResponse(board));
@@ -88,7 +88,7 @@ public class BoardService {
     public GlobalResDto<?> deleteBoard(Long boardId, Member member) throws NotExistBoardException, NoAuthorException {
         Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
 
-        checkAuthor(board, member);
+        member.checkAuthor(board);
 
         // 댓글 먼저 지운 후,
         commentRepository.deleteCommentsByBoard(board);
@@ -103,8 +103,8 @@ public class BoardService {
     @Transactional
     public GlobalResDto<?> heart(Long boardId, Member member) throws NotExistBoardException, NoAuthorException {
         Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
-
-        checkAuthor(board, member);
+        // 작성자인지 아닌지 확인
+        member.checkAuthor(board);
 
         if (heartRepository.findHeartByBoardAndMember(board, member).isEmpty()) {
             // 좋아요
@@ -126,11 +126,5 @@ public class BoardService {
         board.cancelHeart();
         heartRepository.delete(heart);
         return heart;
-    }
-
-    private void checkAuthor(Board board, Member member) throws NoAuthorException {
-        if (!member.getEmail().equals(board.getMember().getEmail())) {
-            throw new NoAuthorException(member.getEmail());
-        }
     }
 }
