@@ -9,8 +9,10 @@ import com.sparta.assignment05.service.UserDetailsImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import java.io.IOException;
 
 @RestController
 @RequiredArgsConstructor
@@ -20,9 +22,10 @@ public class BoardController {
     private final BoardService boardService;
 
     @PostMapping("/auth/boards")
-    public GlobalResDto<?> createBoard(@RequestBody @Valid BoardRequest boardRequest,
-                                       @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        return boardService.createBoard(boardRequest, userDetails.getMember());
+    public GlobalResDto<?> createBoard(@RequestPart(required = false,value = "file") MultipartFile multipartFile,
+                                       @RequestPart(value = "board" ) @Valid BoardRequest boardRequest,
+                                       @AuthenticationPrincipal UserDetailsImpl userDetails) throws IOException {
+        return boardService.createBoard(multipartFile, boardRequest, userDetails.getMember());
     }
 
     @GetMapping("/boards")
