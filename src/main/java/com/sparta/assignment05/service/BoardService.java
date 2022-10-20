@@ -27,7 +27,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.List;
 
 import static com.sparta.assignment05.service.MyPageService.getGlobalResDto;
@@ -40,7 +39,6 @@ public class BoardService {
     private final BoardRepository boardRepository;
     private final HeartRepository heartRepository;
     private final CommentRepository commentRepository;
-
     private final AmazonS3Client amazonS3Client;
 
     @Value("${cloud.aws.s3.bucket}")
@@ -75,19 +73,8 @@ public class BoardService {
 
         boardRepository.save(board);
 
-        BoardResponse response = BoardResponse.builder()
-                .boardId(board.getId())
-                .title(board.getTitle())
-                .content(board.getContent())
-                .author(board.getMember().getEmail())
-                .heartCnt(board.getHeartCnt())
-                .commentCnt(board.getCommentCnt())
-                .createdAt(board.getCreatedAt())
-                .modifiedAt(board.getModifiedAt())
-                .image(board.getImage())
-                .build();
 
-        return GlobalResDto.success(response);
+        return GlobalResDto.success(new BoardResponse(board));
     }
 
     @Transactional(readOnly = true)
@@ -117,9 +104,8 @@ public class BoardService {
     }
 
     @Transactional
-    public GlobalResDto<?> updateBoard(Long boardId,
-                                       Member member,
-                                       BoardRequest boardRequest) throws NotExistBoardException, NoAuthorException {
+    public GlobalResDto<?> updateBoard(Long boardId, Member member, BoardRequest boardRequest)
+            throws NotExistBoardException, NoAuthorException {
 
         // 멤버 토큰 확인 해야돼 말아야돼
         Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
@@ -131,7 +117,8 @@ public class BoardService {
     }
 
     @Transactional
-    public GlobalResDto<?> deleteBoard(Long boardId, Member member) throws NotExistBoardException, NoAuthorException {
+    public GlobalResDto<?> deleteBoard(Long boardId, Member member)
+            throws NotExistBoardException, NoAuthorException {
         Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
 
         member.checkAuthor(board);
@@ -147,7 +134,8 @@ public class BoardService {
     }
 
     @Transactional
-    public GlobalResDto<?> heart(Long boardId, Member member) throws NotExistBoardException, NoAuthorException {
+    public GlobalResDto<?> heart(Long boardId, Member member)
+            throws NotExistBoardException, NoAuthorException {
         Board board = boardRepository.findById(boardId).orElseThrow(NotExistBoardException::new);
         // 작성자인지 아닌지 확인
         member.checkAuthor(board);
