@@ -7,7 +7,6 @@ import lombok.Getter;
 
 import java.time.LocalDateTime;
 
-@Builder
 @Getter // Getter 안붙여주면 GlobalResDto 에 매핑할 때 에러남
 public class MemberResponse {
 
@@ -21,6 +20,14 @@ public class MemberResponse {
     private LocalDateTime createdAt;
 
     private LocalDateTime modifiedAt;
+
+    public MemberResponse(Member member) {
+        this.memberId = member.getId();
+        this.email = member.getEmail();
+        this.nickName = member.getNickName();
+        this.createdAt = member.getCreatedAt();
+        this.modifiedAt = member.getModifiedAt();
+    }
 
 }
 

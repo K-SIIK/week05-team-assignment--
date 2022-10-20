@@ -3,6 +3,9 @@ package com.sparta.assignment05.controller;
 import com.sparta.assignment05.dto.request.LoginRequest;
 import com.sparta.assignment05.dto.GlobalResDto;
 import com.sparta.assignment05.dto.request.MemberRequest;
+import com.sparta.assignment05.exception.DifferentPasswordsException;
+import com.sparta.assignment05.exception.DuplicateEmailException;
+import com.sparta.assignment05.exception.WrongPasswordsException;
 import com.sparta.assignment05.jwt.JwtUtil;
 import com.sparta.assignment05.service.MemberService;
 import com.sparta.assignment05.service.UserDetailsImpl;
@@ -22,19 +25,19 @@ public class MemberController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/members/signup") // 해당 객체가 유효한지 검증해주는 어노테이션 @NotBlank 같은거 검증
-    public GlobalResDto<?> signup(@RequestBody @Valid MemberRequest memberRequest) {
+    public GlobalResDto<?> signup(@RequestBody @Valid MemberRequest memberRequest) throws DuplicateEmailException, DifferentPasswordsException {
         return memberService.signup(memberRequest);
     }
 
     @PostMapping("/members/login")
     public GlobalResDto<?> login(@RequestBody @Valid LoginRequest loginRequest,
-                                 HttpServletResponse response) {
+                                 HttpServletResponse response) throws WrongPasswordsException {
         return memberService.login(loginRequest, response);
     }
 
     @PostMapping("/members/logout")
     public GlobalResDto<?> logout(@AuthenticationPrincipal UserDetailsImpl userDetails) {
-        return memberService.logout(userDetails);
+        return memberService.logout(userDetails.getMember());
     }
 
     // 엑세스토큰 재발급 메서드

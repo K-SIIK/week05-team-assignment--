@@ -1,6 +1,7 @@
 package com.sparta.assignment05.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sparta.assignment05.entity.Board;
 import com.sparta.assignment05.entity.Comment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,4 +38,16 @@ public class BoardResponse {
 
         return responseList;
     }
+
+    public BoardResponse(Board board) {
+        this.boardId = board.getId();
+        this.title = board.getTitle();
+        this.content = board.getContent();
+        this.author = board.getMember().getEmail();
+        this.heartCnt = board.getHeartCnt();
+        this.commentCnt = board.getCommentCnt();
+        this.createdAt = board.getCreatedAt();
+        this.modifiedAt = board.getModifiedAt();
+    }
+
 }

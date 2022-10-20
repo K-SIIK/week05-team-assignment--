@@ -6,6 +6,10 @@ import com.sparta.assignment05.dto.request.MemberRequest;
 import com.sparta.assignment05.dto.response.MemberResponse;
 import com.sparta.assignment05.entity.Member;
 import com.sparta.assignment05.entity.RefreshToken;
+import com.sparta.assignment05.exception.DifferentPasswordsException;
+import com.sparta.assignment05.exception.DuplicateEmailException;
+import com.sparta.assignment05.exception.NoMemberException;
+import com.sparta.assignment05.exception.WrongPasswordsException;
 import com.sparta.assignment05.jwt.JwtUtil;
 import com.sparta.assignment05.jwt.TokenDto;
 import com.sparta.assignment05.repository.MemberRepository;
@@ -26,16 +30,11 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public GlobalResDto<?> signup(MemberRequest memberRequest) {
+    public GlobalResDto<?> signup(MemberRequest memberRequest) throws DuplicateEmailException, DifferentPasswordsException {
         // email 같은 회원 있는지 검사
-        if (memberRepository.findByEmail(memberRequest.getEmail()).isPresent()) {
-            return GlobalResDto.fail("DUPLICATED_EMAIL", "중복된 email 입니다.");
-        }
-
+        isDuplicatedEmail(memberRequest);
         // 비밀번호 2개 일치 하는지 검사
-        if (!memberRequest.getPassword().equals(memberRequest.getPasswordCheck())) {
-            return GlobalResDto.fail("PASSWORD_NOT_MATCH", "비밀번호가 일치하지 않습니다.");
-        }
+        isSamePasswords(memberRequest);
 
         Member member = Member.builder()
                 .email(memberRequest.getEmail())
@@ -45,70 +44,60 @@ public class MemberService {
                 .build();
 
         memberRepository.save(member);
-        MemberResponse memberResponse = MemberResponse.builder()
-                .memberId(member.getId())
-                .email(member.getEmail())
-                .nickName(member.getNickName())
-                .createdAt(member.getCreatedAt())
-                .modifiedAt(member.getModifiedAt())
-                .build();
 
-        return GlobalResDto.success(member.getResponceInstance());
+        return GlobalResDto.success(new MemberResponse(member));
     }
 
-    public GlobalResDto<?> login(LoginRequest loginRequest, HttpServletResponse response) {
-        Optional<Member> member = memberRepository.findByEmail(loginRequest.getEmail());
-
-        if (member.isEmpty()) {
-            return GlobalResDto.fail("NOT_EXIST_MEMBER", "회원이 아닙니다.");
-        }
-
-        if (!member.get().validatePassword(passwordEncoder, loginRequest.getPassword())) {
-            return GlobalResDto.fail("WRONG_PASSWORD", "비밀번호가 일치하지 않습니다.");
-        }
-
+    public GlobalResDto<?> login(LoginRequest loginRequest, HttpServletResponse response) throws WrongPasswordsException {
+        // 이메일 있는지 확인
+        Member member = memberRepository.findByEmail(loginRequest.getEmail()).orElseThrow(NoMemberException::new);
+        // 해당 이메일의 비밀번호가 맞는지 확인
+        member.validatePassword(passwordEncoder, loginRequest.getPassword());
         // 로그인 성공하면 토큰 발급
-        TokenDto tokenDto = jwtUtil.createAllToken(member.get());
+        TokenDto tokenDto = jwtUtil.createAllToken(member);
+        // repository 에서 토큰 확인 후 이상 있으면 재발급, 없으면 새로 발급
+        checkToken(loginRequest, tokenDto);
+        // 헤더에 토큰 첨부
+        attachTokenToHeader(tokenDto, response);
+        return GlobalResDto.success(new MemberResponse(member));
+    }
 
+    public GlobalResDto<?> logout(Member member) {
+        memberRepository.delete(member);
+        jwtUtil.deleteToken(member);
+        return GlobalResDto.success("Log out");
+    }
+
+    // 회원가입 시 중복된 계정 있는지 확인
+    private void isDuplicatedEmail(MemberRequest memberRequest) throws DuplicateEmailException {
+        if (memberRepository.findByEmail(memberRequest.getEmail()).isPresent())
+            throw new DuplicateEmailException(memberRequest.getEmail());
+    }
+
+    // 회원가입시 입력받은 비밀번호 2개 같은지 확인
+    private void isSamePasswords(MemberRequest memberRequest) throws DifferentPasswordsException {
+        if (!memberRequest.getPassword().equals(memberRequest.getPasswordCheck())) {
+            throw new DifferentPasswordsException();
+        }
+    }
+
+
+    // 토큰 유무 확인하고 있으면 갱신해주고, 없으면 생성해주기
+    private void checkToken(LoginRequest loginRequest, TokenDto tokenDto) {
         Optional<RefreshToken> refreshToken = refreshTokenRepository.findByEmail(loginRequest.getEmail());
 
         if (refreshToken.isPresent()) {
             refreshTokenRepository.save(refreshToken.get().updateToken(tokenDto.getRefreshToken()));
         } else {
-            RefreshToken newRefreshToken = new RefreshToken(tokenDto.getRefreshToken(),loginRequest.getEmail());
+            RefreshToken newRefreshToken = new RefreshToken(tokenDto.getRefreshToken(), loginRequest.getEmail());
             refreshTokenRepository.save(newRefreshToken);
         }
-
-        // 헤더에 토큰 첨부
-        attachTokenToHeader(tokenDto, response);
-
-        MemberResponse memberResponse = MemberResponse.builder()
-                .memberId(member.get().getId())
-                .email(member.get().getEmail())
-                .nickName(member.get().getNickName())
-                .createdAt(member.get().getCreatedAt())
-                .modifiedAt(member.get().getModifiedAt())
-                .build();
-
-        return GlobalResDto.success(memberResponse);
     }
 
+    // 토큰 헤더에 첨부
     private void attachTokenToHeader(TokenDto tokenDto, HttpServletResponse response) {
         response.setHeader(JwtUtil.ACCESS_TOKEN, tokenDto.getAccessToken());
         response.setHeader(JwtUtil.REFRESH_TOKEN, tokenDto.getRefreshToken());
     }
-
-    public GlobalResDto<?> logout(UserDetailsImpl userDetails) {
-
-        if (null == userDetails.getMember()) {
-            return GlobalResDto.fail("MEMBER_NOT_FOUND",
-                    "사용자를 찾을 수 없습니다.");
-        }
-
-        jwtUtil.deleteToken(userDetails.getMember());
-
-        return GlobalResDto.success("SUCCESS");
-    }
-
 
 }

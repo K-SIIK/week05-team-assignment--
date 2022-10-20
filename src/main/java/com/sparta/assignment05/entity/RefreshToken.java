@@ -4,10 +4,7 @@ package com.sparta.assignment05.entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 
 @Getter
@@ -18,10 +15,18 @@ public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @NotBlank
+    @Column
     private String refreshToken;
+
     @NotBlank
+    @Column
     private String email;
+
+//    @OneToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "member_id", nullable = false)
+//    private Member member;
 
     public RefreshToken(String token, String email) {
         this.refreshToken = token;
