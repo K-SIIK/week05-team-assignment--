@@ -1,0 +1,27 @@
+POST http://localhost:8080/api/members/signup
+Content-Type: application/json
+
+{
+  "email": "wonbin@mail.com",
+  "nickName": "member",
+  "password": "bin1234!",
+  "passwordCheck" : "bin1234!"
+}
+
+###
+POST http://localhost:8080/api/members/login
+Content-Type: application/json
+
+{
+  "email": "wonbin@mail.com",
+  "password": "bin1234!"
+}
+
+####
+#POST http://localhost:8080/api/members/logout
+#Content-Type: application/json
+#
+#{
+#  "Access_Token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3b25iaW5AbWFpbC5jb20iLCJleHAiOjE2NjYwNTY3NjIsImlhdCI6MTY2NjA1Mzc2Mn0.4MdMRGVbq778fkLf-2VZt71dMYd6SGhLkjUWK6sTXrk"
+#}
+
